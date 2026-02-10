@@ -16,6 +16,7 @@ FetchContent_MakeAvailable(nlohmann_json)
 # Options
 option(GOCXX_ENABLE_TESTS "Enable building of tests (requires GTest)" OFF)
 option(GOCXX_ENABLE_DOCS "Enable building of documentation (requires Doxygen)" OFF)
+option(GOCXX_ENABLE_EXAMPLES "Enable building of examples" OFF)
 
 
 
@@ -191,4 +192,14 @@ if(GOCXX_ENABLE_DOCS)
     else()
         message(WARNING "Doxygen not found, documentation will not be generated")
     endif()
+endif()
+
+# ---------------------------------------------------
+# --- Examples (optional) ---------------------------
+# ---------------------------------------------------
+# To enable examples, use: cmake -DGOCXX_ENABLE_EXAMPLES=ON ..
+
+if(GOCXX_ENABLE_EXAMPLES)
+    message(STATUS "Building examples")
+    add_subdirectory(examples)
 endif()
