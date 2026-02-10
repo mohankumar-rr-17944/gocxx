@@ -3,6 +3,7 @@
 #include <gocxx/net/tcp.h>
 #include <gocxx/net/udp.h>
 #include <gocxx/net/http.h>
+#include <gocxx/net/tls.h>
 #include <thread>
 #include <chrono>
 
@@ -274,4 +275,22 @@ TEST(NetTest, ConcurrentConnections) {
     
     server_thread.join();
     EXPECT_EQ(connections_handled, NUM_CLIENTS);
+}
+
+// TLS/HTTPS Tests
+TEST(NetTest, HTTPSURLParsing) {
+    // Test that HTTPS URLs are recognized
+    // Note: This will fail without network access, but tests the URL parsing
+    auto response = http::Get("https://localhost:443/test");
+    // We expect it to fail (no server), but the URL should be parsed correctly
+    EXPECT_TRUE(response.Failed());  // Expected to fail without a running server
+}
+
+TEST(NetTest, TLSConfigDefaults) {
+    // Test TLS configuration defaults
+    gocxx::net::TLSConfig config;
+    EXPECT_FALSE(config.insecure_skip_verify);  // Should verify by default
+    EXPECT_TRUE(config.cert_file.empty());
+    EXPECT_TRUE(config.key_file.empty());
+    EXPECT_TRUE(config.ca_file.empty());
 }

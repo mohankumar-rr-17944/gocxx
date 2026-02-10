@@ -37,9 +37,10 @@ Go's concurrency model and standard library are praised for their:
 
 `gocxx` automatically fetches and manages its dependencies:
 - **nlohmann/json** (v3.11.3) - High-performance JSON library for C++
+- **OpenSSL** (3.0+) - SSL/TLS support for HTTPS
 - **Google Test** (for testing, optional)
 
-No manual dependency installation required - CMake handles everything!
+CMake handles nlohmann/json automatically. OpenSSL must be installed on your system.
 
 ### Building
 
@@ -163,6 +164,56 @@ auto decoder = NewDecoder(reader);  // Go: json.NewDecoder()
 decoder->Decode(parsed);
 ```
 
+### HTTP/HTTPS Networking
+Complete HTTP and HTTPS support with TLS/SSL using OpenSSL:
+```cpp
+#include <gocxx/net/http.h>
+using namespace gocxx::net::http;
+
+// HTTP Client - supports both HTTP and HTTPS
+auto response = Get("https://api.example.com/data");
+if (response.Ok()) {
+    std::cout << "Status: " << response.value.status_code << std::endl;
+    std::cout << "Body: " << response.value.body << std::endl;
+}
+
+// POST request
+auto post_response = Post("https://api.example.com/submit", 
+                          "application/json", 
+                          R"({"key": "value"})");
+
+// HTTP Server
+auto mux = std::make_shared<ServeMux>();
+mux->HandleFunc("/", [](ResponseWriter& w, const Request& req) {
+    w.Write("Hello, World!");
+});
+
+// Start HTTP server
+ListenAndServe(":8080", mux);
+
+// Start HTTPS server with TLS
+ListenAndServeTLS(":8443", "server.crt", "server.key", mux);
+```
+
+### TLS/SSL Support
+Secure connections using OpenSSL:
+```cpp
+#include <gocxx/net/tls.h>
+using namespace gocxx::net;
+
+// Configure TLS
+TLSConfig config;
+config.cert_file = "client.crt";
+config.key_file = "client.key";
+config.insecure_skip_verify = false;  // Verify certificates
+
+// Dial TLS connection
+auto conn = DialTLS("tcp", "secure.example.com:443", &config);
+
+// Create TLS listener
+auto listener = ListenTLS("tcp", ":8443", config);
+```
+
 ### Channels
 Thread-safe communication channels inspired by Go:
 ```cpp
@@ -264,7 +315,7 @@ cancel();
 | **errors**    | Error creation, wrapping, contextual     | ✅ Implemented |
 | **context**   | Cancellation, timeouts, request-scoped   | ✅ Implemented |
 | **encoding/json** | JSON parsing, serialization with nlohmann/json | ✅ Implemented |
-| **net**       | HTTP client/server, TCP/UDP networking   | ✅ Implemented |
+| **net**       | HTTP/HTTPS client/server, TCP/UDP, TLS/SSL networking | ✅ Implemented |
 
 > All modules are integrated in a single library for optimal performance and ease of use.
 

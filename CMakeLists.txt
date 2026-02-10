@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(gocxx VERSION 0.1.0 LANGUAGES CXX)
+project(gocxx VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)  # Use C++17 for std::optional and modern features
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
