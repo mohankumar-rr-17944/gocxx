@@ -5,6 +5,14 @@
 
 namespace gocxx::time {
 
+    // Define static constants
+    const int64_t Duration::Nanosecond;
+    const int64_t Duration::Microsecond;
+    const int64_t Duration::Millisecond;
+    const int64_t Duration::Second;
+    const int64_t Duration::Minute;
+    const int64_t Duration::Hour;
+
     Duration::Duration() : ns_(0) {}
 
     Duration::Duration(int64_t ns) : ns_(ns) {}

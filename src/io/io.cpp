@@ -4,6 +4,7 @@
 #include <memory>
 #include <mutex>
 #include <deque>
+#include <condition_variable>
 
 namespace gocxx::io {
 

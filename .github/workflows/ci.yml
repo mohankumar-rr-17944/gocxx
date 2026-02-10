@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        compiler: [gcc, clang, msvc]
+        exclude:
+          # Windows doesn't have GCC/Clang in default runners
+          - os: windows-latest
+            compiler: gcc
+          - os: windows-latest
+            compiler: clang
+          # Ubuntu doesn't have MSVC
+          - os: ubuntu-latest
+            compiler: msvc
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Clang (Ubuntu)
+      if: matrix.os == 'ubuntu-latest' && matrix.compiler == 'clang'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang
+    
+    - name: Cache CMake Dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ github.workspace }}/build/_deps
+        key: ${{ runner.os }}-cmake-${{ hashFiles('CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-cmake-
+    
+    - name: Configure CMake (GCC)
+      if: matrix.compiler == 'gcc'
+      run: |
+        cmake -B build -DGOCXX_ENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+    
+    - name: Configure CMake (Clang)
+      if: matrix.compiler == 'clang'
+      run: |
+        cmake -B build -DGOCXX_ENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+    
+    - name: Configure CMake (MSVC)
+      if: matrix.compiler == 'msvc'
+      run: |
+        cmake -B build -DGOCXX_ENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+    
+    - name: Build
+      run: cmake --build build --config Release
+    
+    - name: Run Tests
+      run: |
+        cd build
+        ctest --output-on-failure --build-config Release

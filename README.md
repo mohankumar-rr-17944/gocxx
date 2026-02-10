@@ -1,4 +1,5 @@
 # gocxx
+[![CI](https://github.com/mohankumar-rr-17944/gocxx/actions/workflows/ci.yml/badge.svg)](https://github.com/mohankumar-rr-17944/gocxx/actions/workflows/ci.yml)
 [![Open Source Helpers](https://www.codetriage.com/gocxx/gocxx/badges/users.svg)](https://www.codetriage.com/gocxx/gocxx)
 > 🧩 Go-inspired concurrency primitives and utilities for modern C++
 
@@ -263,7 +264,7 @@ cancel();
 | **errors**    | Error creation, wrapping, contextual     | ✅ Implemented |
 | **context**   | Cancellation, timeouts, request-scoped   | ✅ Implemented |
 | **encoding/json** | JSON parsing, serialization with nlohmann/json | ✅ Implemented |
-| **net**       | HTTP client/server, TCP/UDP networking   | 🔜 Planned |
+| **net**       | HTTP client/server, TCP/UDP networking   | ✅ Implemented |
 
 > All modules are integrated in a single library for optimal performance and ease of use.
 
@@ -318,6 +319,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more.
 - [x] ✅ **JSON module** - Go-style JSON with nlohmann/json backend
 - [x] ✅ Comprehensive test suite (149+ tests)
 - [x] ✅ API documentation with Doxygen
+- [x] ✅ **net** module - HTTP client/server, TCP/UDP networking
+- [x] ✅ CI/CD pipeline with multi-platform builds
 - [ ] 🚧 Performance optimizations
-- [ ] 🔜 **net** module - HTTP client/server, TCP/UDP networking
 - [ ] 🔜 Additional examples and tutorials

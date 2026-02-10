@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(gocxx VERSION 0.0.1 LANGUAGES CXX)
+project(gocxx VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)  # Use C++17 for std::optional and modern features
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,6 +16,7 @@ FetchContent_MakeAvailable(nlohmann_json)
 # Options
 option(GOCXX_ENABLE_TESTS "Enable building of tests (requires GTest)" OFF)
 option(GOCXX_ENABLE_DOCS "Enable building of documentation (requires Doxygen)" OFF)
+option(GOCXX_ENABLE_EXAMPLES "Enable building of examples" OFF)
 
 
 
@@ -191,4 +192,14 @@ if(GOCXX_ENABLE_DOCS)
     else()
         message(WARNING "Doxygen not found, documentation will not be generated")
     endif()
+endif()
+
+# ---------------------------------------------------
+# --- Examples (optional) ---------------------------
+# ---------------------------------------------------
+# To enable examples, use: cmake -DGOCXX_ENABLE_EXAMPLES=ON ..
+
+if(GOCXX_ENABLE_EXAMPLES)
+    message(STATUS "Building examples")
+    add_subdirectory(examples)
 endif()
