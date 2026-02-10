@@ -3,6 +3,7 @@
 
 // Platform-specific includes
 #ifdef _WIN32
+    #define NOMINMAX  // Prevent Windows from defining min/max macros
     #include <winsock2.h>
     #include <ws2tcpip.h>
     #define SOCKET_ERROR_CODE WSAGetLastError()
