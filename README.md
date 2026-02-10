@@ -1,4 +1,5 @@
 # gocxx
+[![CI](https://github.com/mohankumar-rr-17944/gocxx/actions/workflows/ci.yml/badge.svg)](https://github.com/mohankumar-rr-17944/gocxx/actions/workflows/ci.yml)
 [![Open Source Helpers](https://www.codetriage.com/gocxx/gocxx/badges/users.svg)](https://www.codetriage.com/gocxx/gocxx)
 > 🧩 Go-inspired concurrency primitives and utilities for modern C++
 
