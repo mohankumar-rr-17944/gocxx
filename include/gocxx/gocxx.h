@@ -61,6 +61,12 @@
 // encoding
 #include <gocxx/encoding/json.h>
 
+// net
+#include <gocxx/net/net.h>
+#include <gocxx/net/tcp.h>
+#include <gocxx/net/udp.h>
+#include <gocxx/net/http.h>
+
 namespace gocxx {
     void anchor();  
 }

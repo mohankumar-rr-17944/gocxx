@@ -433,7 +433,7 @@ namespace gocxx::os {
         if (kill(pid_, SIGKILL) != 0) {
             return gocxx::base::Result<void>(gocxx::errors::New("failed to kill process"));
         }
-        return gocxx::base::Result<void>::Ok();
+        return gocxx::base::Result<void>();
 #endif
     }
 
@@ -445,7 +445,7 @@ namespace gocxx::os {
         if (kill(pid_, sig->Code()) != 0) {
             return gocxx::base::Result<void>(gocxx::errors::New("failed to send signal"));
         }
-        return gocxx::base::Result<void>::Ok();
+        return gocxx::base::Result<void>();
 #endif
     }
 
@@ -485,7 +485,7 @@ namespace gocxx::os {
         state->systemTime = std::chrono::system_clock::now();
         
         state_ = state;
-        return gocxx::base::Result<std::shared_ptr<ProcessState>>::Ok(state);
+        return {state, nullptr};
 #endif
     }
 
