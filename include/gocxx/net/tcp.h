@@ -84,6 +84,17 @@ public:
      */
     int GetFD() const { return socket_fd_; }
 
+    /**
+     * @brief Releases ownership of the fd so this object won't close it on destruction
+     * @return The file descriptor (caller takes ownership)
+     */
+    int ReleaseFD() {
+        int fd = socket_fd_;
+        socket_fd_ = -1;
+        closed_ = true;
+        return fd;
+    }
+
 protected:
     int socket_fd_;
     std::shared_ptr<TCPAddr> local_addr_;

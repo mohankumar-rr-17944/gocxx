@@ -7,6 +7,9 @@
 
 #ifdef _WIN32
 #include <winsock2.h>
+#include <wincrypt.h>
+#include <openssl/x509.h>
+#pragma comment(lib, "crypt32.lib")
 #else
 #include <unistd.h>
 #include <sys/socket.h>
@@ -33,6 +36,38 @@ static std::string GetSSLError() {
     char buf[256];
     ERR_error_string_n(ERR_get_error(), buf, sizeof(buf));
     return std::string(buf);
+}
+
+// Load system CA certificates into an SSL_CTX
+static bool LoadSystemCACerts(SSL_CTX* ctx) {
+#ifdef _WIN32
+    // On Windows, load certificates from the system "ROOT" certificate store
+    HCERTSTORE hStore = CertOpenSystemStoreA(0, "ROOT");
+    if (!hStore) {
+        return false;
+    }
+
+    X509_STORE* store = SSL_CTX_get_cert_store(ctx);
+    PCCERT_CONTEXT pContext = nullptr;
+    int added = 0;
+
+    while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) != nullptr) {
+        const unsigned char* data = pContext->pbCertEncoded;
+        X509* x509 = d2i_X509(nullptr, &data, pContext->cbCertEncoded);
+        if (x509) {
+            if (X509_STORE_add_cert(store, x509) == 1) {
+                added++;
+            }
+            X509_free(x509);
+        }
+    }
+
+    CertCloseStore(hStore, 0);
+    return added > 0;
+#else
+    // On Linux/macOS, the default paths usually work
+    return SSL_CTX_set_default_verify_paths(ctx) == 1;
+#endif
 }
 
 // TLSConn implementation
@@ -194,8 +229,8 @@ gocxx::base::Result<std::shared_ptr<TLSConn>> DialTLS(
                     return {nullptr, gocxx::errors::New("Failed to load CA file: " + GetSSLError())};
                 }
             } else {
-                // Use system default CA certificates
-                SSL_CTX_set_default_verify_paths(ctx);
+                // Use system CA certificates
+                LoadSystemCACerts(ctx);
             }
         }
         
@@ -215,7 +250,7 @@ gocxx::base::Result<std::shared_ptr<TLSConn>> DialTLS(
     } else {
         // Default: verify peer and use system CA certificates
         SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, nullptr);
-        SSL_CTX_set_default_verify_paths(ctx);
+        LoadSystemCACerts(ctx);
     }
     
     // Create SSL structure
@@ -224,6 +259,20 @@ gocxx::base::Result<std::shared_ptr<TLSConn>> DialTLS(
         SSL_CTX_free(ctx);
         tcp_conn->close();
         return {nullptr, gocxx::errors::New("SSL_new failed: " + GetSSLError())};
+    }
+    
+    // Set SNI hostname (required by most servers for certificate selection)
+    // Extract hostname from address (strip port)
+    std::string hostname = address;
+    auto colon_pos = hostname.find(':');
+    if (colon_pos != std::string::npos) {
+        hostname = hostname.substr(0, colon_pos);
+    }
+    SSL_set_tlsext_host_name(ssl, hostname.c_str());
+    
+    // Enable hostname verification if peer verification is on
+    if (!config || !config->insecure_skip_verify) {
+        SSL_set1_host(ssl, hostname.c_str());
     }
     
     // Get the file descriptor
@@ -239,7 +288,10 @@ gocxx::base::Result<std::shared_ptr<TLSConn>> DialTLS(
         return {nullptr, gocxx::errors::New("SSL_connect failed: " + GetSSLError())};
     }
     
-    // Create TLS connection
+    // Release fd ownership from tcp_conn so it won't close the socket on destruction
+    tcp_conn->ReleaseFD();
+    
+    // Create TLS connection (takes ownership of fd, ssl, ctx)
     auto tls_conn = std::make_shared<TLSConn>(fd, ssl, ctx);
     
     return {tls_conn, nullptr};

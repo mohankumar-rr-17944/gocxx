@@ -53,9 +53,9 @@ target_link_libraries(gocxx PUBLIC nlohmann_json::nlohmann_json)
 # Link with OpenSSL
 target_link_libraries(gocxx PUBLIC OpenSSL::SSL OpenSSL::Crypto)
 
-# Link Winsock on Windows
+# Link Winsock and crypt32 on Windows
 if(WIN32)
-    target_link_libraries(gocxx PUBLIC ws2_32)
+    target_link_libraries(gocxx PUBLIC ws2_32 crypt32)
 endif()
 
 # This is needed to ensure relocatable static linking
