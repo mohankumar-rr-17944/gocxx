@@ -1,4 +1,5 @@
 #include <gocxx/net/http.h>
+#include <gocxx/net/tls.h>
 #include <sstream>
 #include <algorithm>
 #include <thread>
@@ -285,12 +286,26 @@ gocxx::base::Result<void> ListenAndServe(
 gocxx::base::Result<Response> Get(const std::string& url) {
     Response resp;
     
-    // Parse URL (simplified - assumes http://host:port/path format)
+    // Parse URL (supports both http:// and https://)
     std::string address;
     std::string path = "/";
+    bool is_https = false;
+    int default_port = 80;
     
     // Simple URL parsing
-    if (url.find("http://") == 0) {
+    if (url.find("https://") == 0) {
+        is_https = true;
+        default_port = 443;
+        std::string rest = url.substr(8);  // Remove "https://"
+        size_t slash_pos = rest.find('/');
+        
+        if (slash_pos != std::string::npos) {
+            address = rest.substr(0, slash_pos);
+            path = rest.substr(slash_pos);
+        } else {
+            address = rest;
+        }
+    } else if (url.find("http://") == 0) {
         std::string rest = url.substr(7);  // Remove "http://"
         size_t slash_pos = rest.find('/');
         
@@ -301,21 +316,33 @@ gocxx::base::Result<Response> Get(const std::string& url) {
             address = rest;
         }
     } else {
-        return {resp, gocxx::errors::New("invalid URL: must start with http://")};
+        return {resp, gocxx::errors::New("invalid URL: must start with http:// or https://")};
     }
     
     // Add default port if not specified
     if (address.find(':') == std::string::npos) {
-        address += ":80";
+        address += ":" + std::to_string(default_port);
     }
     
-    // Connect
-    auto conn_result = DialTCP("tcp", address);
-    if (conn_result.Failed()) {
-        return {resp, conn_result.err};
-    }
+    // Connect (either TCP or TLS)
+    std::shared_ptr<TCPConn> conn;
     
-    auto conn = conn_result.value;
+    if (is_https) {
+        TLSConfig config;
+        config.insecure_skip_verify = false;  // Verify certificates by default
+        
+        auto tls_result = DialTLS("tcp", address, &config);
+        if (tls_result.Failed()) {
+            return {resp, tls_result.err};
+        }
+        conn = tls_result.value;
+    } else {
+        auto tcp_result = DialTCP("tcp", address);
+        if (tcp_result.Failed()) {
+            return {resp, tcp_result.err};
+        }
+        conn = tcp_result.value;
+    }
     
     // Send request
     std::ostringstream request;
@@ -400,11 +427,25 @@ gocxx::base::Result<Response> Post(
     
     Response resp;
     
-    // Parse URL
+    // Parse URL (supports both http:// and https://)
     std::string address;
     std::string path = "/";
+    bool is_https = false;
+    int default_port = 80;
     
-    if (url.find("http://") == 0) {
+    if (url.find("https://") == 0) {
+        is_https = true;
+        default_port = 443;
+        std::string rest = url.substr(8);  // Remove "https://"
+        size_t slash_pos = rest.find('/');
+        
+        if (slash_pos != std::string::npos) {
+            address = rest.substr(0, slash_pos);
+            path = rest.substr(slash_pos);
+        } else {
+            address = rest;
+        }
+    } else if (url.find("http://") == 0) {
         std::string rest = url.substr(7);
         size_t slash_pos = rest.find('/');
         
@@ -415,20 +456,32 @@ gocxx::base::Result<Response> Post(
             address = rest;
         }
     } else {
-        return {resp, gocxx::errors::New("invalid URL: must start with http://")};
+        return {resp, gocxx::errors::New("invalid URL: must start with http:// or https://")};
     }
     
     if (address.find(':') == std::string::npos) {
-        address += ":80";
+        address += ":" + std::to_string(default_port);
     }
     
-    // Connect
-    auto conn_result = DialTCP("tcp", address);
-    if (conn_result.Failed()) {
-        return {resp, conn_result.err};
-    }
+    // Connect (either TCP or TLS)
+    std::shared_ptr<TCPConn> conn;
     
-    auto conn = conn_result.value;
+    if (is_https) {
+        TLSConfig config;
+        config.insecure_skip_verify = false;
+        
+        auto tls_result = DialTLS("tcp", address, &config);
+        if (tls_result.Failed()) {
+            return {resp, tls_result.err};
+        }
+        conn = tls_result.value;
+    } else {
+        auto tcp_result = DialTCP("tcp", address);
+        if (tcp_result.Failed()) {
+            return {resp, tcp_result.err};
+        }
+        conn = tcp_result.value;
+    }
     
     // Send request
     std::ostringstream request;
@@ -504,6 +557,119 @@ gocxx::base::Result<Response> Post(
     resp.body = body_stream.str();
     
     return {resp, nullptr};
+}
+
+// HTTPS Server function
+gocxx::base::Result<void> ListenAndServeTLS(
+    const std::string& addr,
+    const std::string& cert_file,
+    const std::string& key_file,
+    std::shared_ptr<ServeMux> handler) {
+    
+    // Create TLS configuration
+    TLSConfig config;
+    config.cert_file = cert_file;
+    config.key_file = key_file;
+    
+    // Create TLS listener
+    auto listener_result = ListenTLS("tcp", addr, config);
+    if (listener_result.Failed()) {
+        return {listener_result.err};
+    }
+    
+    auto listener = listener_result.value;
+    
+    // Accept and handle connections (same as HTTP server)
+    while (true) {
+        auto conn_result = listener->Accept();
+        if (conn_result.Failed()) {
+            // Log error but continue
+            continue;
+        }
+        
+        auto conn = std::dynamic_pointer_cast<TCPConn>(conn_result.value);
+        if (!conn) {
+            continue;
+        }
+        
+        // Handle connection in a new thread
+        std::thread([handler, conn]() {
+            // Read request
+            const size_t BUFFER_SIZE = 4096;
+            uint8_t buffer[BUFFER_SIZE];
+            std::string raw_request;
+            
+            while (true) {
+                auto read_result = conn->Read(buffer, BUFFER_SIZE);
+                if (read_result.Failed() || read_result.value == 0) {
+                    break;
+                }
+                
+                raw_request.append(reinterpret_cast<char*>(buffer), read_result.value);
+                
+                // Check if we have a complete request
+                if (raw_request.find("\r\n\r\n") != std::string::npos) {
+                    break;
+                }
+                
+                // Limit request size to prevent DoS
+                if (raw_request.size() > 1024 * 1024) {
+                    break;
+                }
+            }
+            
+            // Parse request (reuse Server's parseRequest logic)
+            // For simplicity, we'll inline a basic parser here
+            Request req;
+            std::istringstream stream(raw_request);
+            std::string line;
+            
+            // Parse request line
+            if (std::getline(stream, line)) {
+                if (!line.empty() && line.back() == '\r') {
+                    line.pop_back();
+                }
+                
+                std::istringstream request_line(line);
+                request_line >> req.method >> req.url >> req.proto;
+            }
+            
+            // Parse headers
+            while (std::getline(stream, line)) {
+                if (!line.empty() && line.back() == '\r') {
+                    line.pop_back();
+                }
+                
+                if (line.empty()) {
+                    break;
+                }
+                
+                size_t colon_pos = line.find(':');
+                if (colon_pos != std::string::npos) {
+                    std::string key = toLower(trim(line.substr(0, colon_pos)));
+                    std::string value = trim(line.substr(colon_pos + 1));
+                    req.header[key] = value;
+                }
+            }
+            
+            // Parse body
+            std::ostringstream body_stream;
+            body_stream << stream.rdbuf();
+            req.body = body_stream.str();
+            
+            req.remote_addr = conn->RemoteAddr()->String();
+            
+            // Handle request
+            ResponseWriterImpl writer(conn);
+            if (handler) {
+                handler->ServeHTTP(writer, req);
+            }
+            
+            conn->close();
+        }).detach();
+    }
+    
+    return {};
 }
 
 } // namespace gocxx::net::http

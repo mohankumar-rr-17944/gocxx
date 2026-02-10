@@ -40,6 +40,12 @@ public:
 class TCPConn : public Conn {
 public:
     TCPConn(int socket_fd, std::shared_ptr<TCPAddr> local, std::shared_ptr<TCPAddr> remote);
+    
+protected:
+    // Protected constructor for derived classes (like TLSConn)
+    TCPConn(int socket_fd);
+    
+public:
     virtual ~TCPConn();
     
     // io::Reader interface
@@ -71,8 +77,14 @@ public:
      * @brief Shuts down the writing side of the connection
      */
     gocxx::base::Result<void> CloseWrite();
+    
+    /**
+     * @brief Gets the underlying socket file descriptor
+     * @note This is needed for TLS wrapping
+     */
+    int GetFD() const { return socket_fd_; }
 
-private:
+protected:
     int socket_fd_;
     std::shared_ptr<TCPAddr> local_addr_;
     std::shared_ptr<TCPAddr> remote_addr_;
@@ -90,13 +102,25 @@ private:
 class TCPListener : public Listener {
 public:
     TCPListener(int socket_fd, std::shared_ptr<TCPAddr> local_addr);
+    
+protected:
+    // Protected constructor for derived classes (like TLSListener)
+    TCPListener(int socket_fd);
+    
+public:
     virtual ~TCPListener();
     
     gocxx::base::Result<std::shared_ptr<Conn>> Accept() override;
     gocxx::base::Result<void> Close() override;
     std::shared_ptr<Addr> Address() override;
+    
+    /**
+     * @brief Gets the underlying socket file descriptor
+     * @note This is needed for TLS wrapping
+     */
+    int GetFD() const { return socket_fd_; }
 
-private:
+protected:
     int socket_fd_;
     std::shared_ptr<TCPAddr> local_addr_;
     bool closed_;

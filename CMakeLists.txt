@@ -13,6 +13,9 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
+# Find OpenSSL for SSL/TLS support
+find_package(OpenSSL REQUIRED)
+
 # Options
 option(GOCXX_ENABLE_TESTS "Enable building of tests (requires GTest)" OFF)
 option(GOCXX_ENABLE_DOCS "Enable building of documentation (requires Doxygen)" OFF)
@@ -46,6 +49,9 @@ target_include_directories(gocxx PUBLIC
 
 # Link with nlohmann_json
 target_link_libraries(gocxx PUBLIC nlohmann_json::nlohmann_json)
+
+# Link with OpenSSL
+target_link_libraries(gocxx PUBLIC OpenSSL::SSL OpenSSL::Crypto)
 
 # Link Winsock on Windows
 if(WIN32)
