@@ -38,6 +38,7 @@ endfunction()
 add_gocxx_example(tcp_example tcp_example.cpp)
 add_gocxx_example(udp_example udp_example.cpp)
 add_gocxx_example(http_example http_example.cpp)
+add_gocxx_example(https_example https_example.cpp)
 
 # Optional: Create a target to build all examples
 add_custom_target(examples
@@ -46,6 +47,7 @@ add_custom_target(examples
         tcp_example
         udp_example
         http_example
+        https_example
     COMMENT "Building all gocxx examples"
 )
 

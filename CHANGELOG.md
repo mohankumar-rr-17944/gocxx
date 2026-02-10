@@ -5,6 +5,45 @@ All notable changes to the gocxx project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-02-10
+
+### Added
+
+#### TLS/SSL Support (HTTPS)
+- **OpenSSL Integration**: Added OpenSSL as a dependency for SSL/TLS support
+- **TLS Module**: New `gocxx::net::tls` module for secure connections
+  - `TLSConn` class for TLS-encrypted TCP connections
+  - `TLSListener` class for accepting secure connections
+  - `TLSConfig` struct for configuring SSL/TLS settings
+  - `DialTLS()` function for creating secure client connections
+  - `ListenTLS()` function for creating secure servers
+  
+- **HTTPS Client Support**: Extended HTTP client functions
+  - `http::Get()` now supports both `http://` and `https://` URLs
+  - `http::Post()` now supports both `http://` and `https://` URLs
+  - Automatic TLS connection establishment for HTTPS URLs
+  - Certificate verification using system CA certificates by default
+  
+- **HTTPS Server Support**:
+  - `http::ListenAndServeTLS()` function for HTTPS servers
+  - Full TLS handshake and encryption for server connections
+  - Certificate and private key configuration
+  
+- **Examples**:
+  - `https_example.cpp` demonstrating HTTPS server and client
+  - Self-signed certificates for testing (`server.crt`, `server.key`)
+  
+#### API Enhancements
+- Added `GetFD()` method to `TCPConn` and `TCPListener` for TLS wrapping
+- Added protected constructors to `TCPConn` and `TCPListener` for inheritance
+
+### Technical Details
+- SSL/TLS implementation uses OpenSSL 3.0+
+- Certificate verification enabled by default (can be disabled for testing)
+- Support for custom CA certificates
+- Support for client certificates (mutual TLS)
+- All TLS operations integrate seamlessly with existing `io::Reader`, `io::Writer`, and `io::Closer` interfaces
+
 ## [0.1.0] - 2026-02-10
 
 ### Added

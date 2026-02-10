@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(gocxx VERSION 0.1.0 LANGUAGES CXX)
+project(gocxx VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)  # Use C++17 for std::optional and modern features
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -12,6 +12,9 @@ FetchContent_Declare(
     URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
 )
 FetchContent_MakeAvailable(nlohmann_json)
+
+# Find OpenSSL for SSL/TLS support
+find_package(OpenSSL REQUIRED)
 
 # Options
 option(GOCXX_ENABLE_TESTS "Enable building of tests (requires GTest)" OFF)
@@ -47,9 +50,12 @@ target_include_directories(gocxx PUBLIC
 # Link with nlohmann_json
 target_link_libraries(gocxx PUBLIC nlohmann_json::nlohmann_json)
 
-# Link Winsock on Windows
+# Link with OpenSSL
+target_link_libraries(gocxx PUBLIC OpenSSL::SSL OpenSSL::Crypto)
+
+# Link Winsock and crypt32 on Windows
 if(WIN32)
-    target_link_libraries(gocxx PUBLIC ws2_32)
+    target_link_libraries(gocxx PUBLIC ws2_32 crypt32)
 endif()
 
 # This is needed to ensure relocatable static linking

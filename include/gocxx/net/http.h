@@ -194,6 +194,23 @@ gocxx::base::Result<Response> Post(
     const std::string& content_type,
     const std::string& body);
 
+/**
+ * @brief Starts an HTTPS server and listens for secure requests
+ * 
+ * Similar to http.ListenAndServeTLS(addr, certFile, keyFile, handler)
+ * 
+ * @param addr Address to listen on (e.g., ":8443")
+ * @param cert_file Path to certificate file (PEM format)
+ * @param key_file Path to private key file (PEM format)
+ * @param handler Request multiplexer
+ * @return Result containing void or an error
+ */
+gocxx::base::Result<void> ListenAndServeTLS(
+    const std::string& addr,
+    const std::string& cert_file,
+    const std::string& key_file,
+    std::shared_ptr<ServeMux> handler);
+
 // HTTP status codes (common ones)
 const int StatusOK = 200;
 const int StatusCreated = 201;

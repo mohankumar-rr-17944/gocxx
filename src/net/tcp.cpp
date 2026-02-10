@@ -120,6 +120,13 @@ TCPConn::TCPConn(int socket_fd, std::shared_ptr<TCPAddr> local, std::shared_ptr<
     write_deadline_ = std::chrono::system_clock::time_point::max();
 }
 
+// Protected constructor for derived classes
+TCPConn::TCPConn(int socket_fd)
+    : socket_fd_(socket_fd), closed_(false) {
+    read_deadline_ = std::chrono::system_clock::time_point::max();
+    write_deadline_ = std::chrono::system_clock::time_point::max();
+}
+
 TCPConn::~TCPConn() {
     if (!closed_) {
         close();
@@ -240,6 +247,10 @@ gocxx::base::Result<void> TCPConn::CloseWrite() {
 // TCPListener implementation
 TCPListener::TCPListener(int socket_fd, std::shared_ptr<TCPAddr> local_addr)
     : socket_fd_(socket_fd), local_addr_(local_addr), closed_(false) {}
+
+// Protected constructor for derived classes
+TCPListener::TCPListener(int socket_fd)
+    : socket_fd_(socket_fd), closed_(false) {}
 
 TCPListener::~TCPListener() {
     if (!closed_) {
