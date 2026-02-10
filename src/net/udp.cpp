@@ -6,6 +6,20 @@
     #define NOMINMAX  // Prevent Windows from defining min/max macros
     #include <winsock2.h>
     #include <ws2tcpip.h>
+    #pragma comment(lib, "ws2_32.lib")
+
+    // Ensure Winsock is initialized (ref-counted, safe alongside TCP init)
+    struct WinsockInitializerUDP {
+        WinsockInitializerUDP() {
+            WSADATA wsaData;
+            WSAStartup(MAKEWORD(2, 2), &wsaData);
+        }
+        ~WinsockInitializerUDP() {
+            WSACleanup();
+        }
+    };
+    static WinsockInitializerUDP winsock_init_udp;
+
     #define SOCKET_ERROR_CODE WSAGetLastError()
     #define SOCKET_CLOSE closesocket
 #else

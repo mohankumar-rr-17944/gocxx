@@ -47,6 +47,11 @@ target_include_directories(gocxx PUBLIC
 # Link with nlohmann_json
 target_link_libraries(gocxx PUBLIC nlohmann_json::nlohmann_json)
 
+# Link Winsock on Windows
+if(WIN32)
+    target_link_libraries(gocxx PUBLIC ws2_32)
+endif()
+
 # This is needed to ensure relocatable static linking
 set_target_properties(gocxx PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
